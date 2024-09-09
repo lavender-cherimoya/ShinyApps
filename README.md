@@ -6,7 +6,6 @@ This repository contains all the needed files for the Shiny application assignme
 - PresentationApp.html, or index.html, which is the html output of the Rmarkdown file.
 
 The application itself can be found on the following link, hosted by the shinyapps.io servers : 
-
 https://lavender-cherimoya.shinyapps.io/DiabetesPredictionApplication/ 
 
 The presentation slides for the application can be found on the following link : 
