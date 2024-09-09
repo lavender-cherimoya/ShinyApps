@@ -1,11 +1,13 @@
 function(input, output) {
       
-      #show_true_answer <- reactiveVal(FALSE)
-      
+      # Call the documentationModal() function, written in global.R, to display the
+      # documentation text
       observeEvent(input$show_doc, {
             showModal(documentationModal())
       })
       
+      # Text about the data, which is displayed when clicking on the Data Information
+      # button, which is available in the Documentation page
       observeEvent(input$show_data_info, {
             showModal(modalDialog(
                   title = "Data Information",
@@ -37,22 +39,28 @@ function(input, output) {
                   )
             ))
       })
-      
+      # When the user clicks on the Back document, display again the text from
+      # the documentation function
       observeEvent(input$back_to_doc, {
             removeModal()
             showModal(documentationModal())
       })
       
+      # Create the variable that will contain the clicked data point by the user
       clickedPoint <- reactiveVal(NULL)
 
+      # Create a datasubset with the number of points given as input by the user
       sampleData <- reactive({
             data_subset <- dataset[sample(1:nrow(dataset), input$numPoints), ]
             data_subset
       })
     
+      # Create the scatter plot with the sampleData
       output$scatterPlot <- renderPlotly({
           
             data <- sampleData()
+            # Add a color parameter, to give different colors to the unselected points
+            # (blue) and to the selected point (red)
             data$color <- "Unselected data points"
             clicked_idx <- clickedPoint()
           
@@ -60,9 +68,11 @@ function(input, output) {
                    data$color[clicked_idx] <- "Selected data point"
             }
             
+            # Give the plot a title
             plot_title <- paste("Scatter plot of", input$yvar, "as a function of", 
                                 input$xvar, "for", nrow(data), "patients")
           
+            # Plot the scatter plot as a ggplot
             p <- ggplot(data, aes_string(x = input$xvar, y = input$yvar)) +
                   geom_point(aes(color = color), size=2.5, shape=21, stroke=1, 
                               alpha=0.7) +
@@ -71,11 +81,13 @@ function(input, output) {
                   theme_minimal() +
                   ggtitle(plot_title)
           
+            # Transform it into an interactive plotly plot
             ggplotly(p) %>%
                   layout(hovermode="closest")
       })
     
       selectSample <- reactive({
+            # Save the data of the clicked point
             click_data <- event_data("plotly_click")
           
             #print("Select Sample Triggered") # Debugging
@@ -86,9 +98,12 @@ function(input, output) {
           
             data <- sampleData()
           
+            # Get the exact row of the clicked data point
             clicked_row <- which(data[[input$xvar]] == click_data$x &
                                      data[[input$yvar]] == click_data$y)
           
+            # Save the row in question, if existing, in the clickedPoint variable 
+            # and in the selected variable
             if (length(clicked_row) == 1) {
                   clickedPoint(clicked_row)
                   selected <- data[clicked_row, ]
@@ -98,7 +113,7 @@ function(input, output) {
             }
       })
 
-    
+    # Display the parameters of the selected data point as two columns
       output$selectSample <- renderUI({
             selected <- selectSample()
             if (is.null(selected)) return(NULL)
@@ -134,10 +149,13 @@ function(input, output) {
                   "\nAge:", selected$Age)
       })
     
+
       output$prediction <- renderUI({
             
             #print("Prediction Triggered")  # Debugging
           
+            # Display a please select message for the user in the prediction panel as
+            # long no data point was selected
             if (is.null(selectSample())) {
                   return(HTML("Please select a data point on the graphic displayed on the right side."))
             }
@@ -148,27 +166,34 @@ function(input, output) {
                   return(HTML("Please select a data point on the graphic displayed on the right side."))
             }
     
+            # Select the training dataset
             train_data <- dataset[!rownames(dataset) %in% rownames(sampleData()), ]
       
-            print(nrow(train_data))
+            #print(nrow(train_data)) Debugging
     
+            # Train a logistic regression model 
             model_logistic <- glm(diabetes ~ ., data = train_data, family = binomial)
+            # Get the prediction of the selected sample
             prediction_logistic <- predict(model_logistic, selected, type = "response")
+            # Get the probability
             probability_logistic <- round(prediction_logistic * 100, 2)
             class_logistic <- ifelse(prediction_logistic > 0.5, "Diabetes Positive", "Diabete Negative")
     
+            # Similar steps for a decision tree model
             model_dtree <- rpart(diabetes ~ ., data = train_data, method = "class")
             prediction_tree_probs <- predict(model_dtree, selected, type = "prob")
             
             probability_tree <- round(prediction_tree_probs[,"pos"] * 100, 2)
             class_tree <- ifelse(prediction_tree_probs[,"pos"] > 0.5, "Diabetes Positive", "Diabetes Negative")
             
+            # Save the true class of the sample
             true_answer <- ifelse(selected$diabetes == "pos", "Diabetes Positive", "Diabetes Negative")
             
             
             #print(class_logistic)            # Debugging
             #print(as.character(prediction_tree_probs)) # Debugging
 
+            # Print out the result text that should be displayed in the iu
             result_text <- paste(
                   "<strong>Logistic Regression Prediction:</strong> <br/>", class_logistic, 
                   "<br/> (Probability: ", probability_logistic, "%)<br/><br/>",

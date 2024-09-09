@@ -1,4 +1,4 @@
-
+# Load the packages needed by the application
 library(shiny)
 library(mlbench)
 library(ggplot2)
@@ -6,10 +6,10 @@ library(caret)
 library(rpart)
 library(plotly)
 
+# Load the needed dataset, and do a quick data cleaning on it
 data("PimaIndiansDiabetes")
 dataset <- PimaIndiansDiabetes
 dataset <- na.omit(dataset)
-#BreastCancer <- BreastCancer[,-1]  # Removing the 'Id' column
 dataset[,-9] <- lapply(dataset[,-9], function(x) as.numeric(as.character(x)))
 colnames(dataset) <- c("NumberPregnancies", "Glucose", "BloodPressure", 
                        "SkinThickness", "Insulin", "BMI", "PedigreeFunction", 
@@ -17,7 +17,7 @@ colnames(dataset) <- c("NumberPregnancies", "Glucose", "BloodPressure",
 dataset$diabetes <- factor(dataset$diabetes, levels = c("neg", "pos"))
 
 
-
+# Function that contains the text displayed by the Documentation button
 documentationModal <- function() {
       modalDialog(
             title = "Documentation",
