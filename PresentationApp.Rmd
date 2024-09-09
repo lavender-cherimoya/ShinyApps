@@ -1,0 +1,115 @@
+---
+title: "Diabetes Prediction Application"
+#subtitle: "<span style='font-size:22px;'>Please click on the right border of the slide to view #the next one.</span>"
+output: slidy_presentation
+author: lavender-cherimoya
+date: "2024-08-30"
+---
+
+## Introduction
+
+```{r libraries, echo=FALSE, error=FALSE, warning=FALSE, message=FALSE}
+library(mlbench)
+library(ggplot2)
+library(caret)
+library(rpart)
+library(plotly)
+library(randomForest)
+library(knitr)
+library(kableExtra)
+
+data("PimaIndiansDiabetes")
+dataset <- PimaIndiansDiabetes
+dataset <- na.omit(dataset)
+#BreastCancer <- BreastCancer[,-1]  # Removing the 'Id' column
+dataset[,-9] <- lapply(dataset[,-9], function(x) as.numeric(as.character(x)))
+colnames(dataset) <- c("NumberPregnancies", "Glucose", "BloodPressure", 
+                       "SkinThickness", "Insulin", "BMI", "PedigreeFunction", 
+                       "Age", "diabetes")
+dataset$diabetes <- factor(dataset$diabetes, levels = c("neg", "pos"))
+```
+
+Diabetes is a chronic condition that can lead to severe complications such as heart disease, kidney failure, and blindness. Many individuals may not realize they are at risk until it's too late. Therefore, a diabetes prediction application can play a crucial role by enabling early detection and prevention.
+
+The goal of the Diabetes Prediction Application is to create a small application for educational purpose. It lets the user explore different parameters describing the patients with the help of scatter plots. The user has then the possibility to select one specific patient of choice, and the application will give prediction results for the following question: **Does this particular patient have diabetes or not ?**
+
+The application then uses two different machine learning models for the prediction part, which gives the user the opportunity to compare their performance.
+
+The application can be found on the following webpage, hosted by the shinyapps.io servers:
+https://lavender-cherimoya.shinyapps.io/DiabetesPredictionApplication/ 
+
+```{r slide1_2, echo=FALSE, error=FALSE, warning=FALSE, message=FALSE}
+
+data_subset <- dataset[sample(1:nrow(dataset), 40), ]
+
+plot_title <- paste("Scatter plot of Glucose as a function of Age for 40 patients")
+          
+            p <- ggplot(data_subset, aes_string(x = "Age", y = "Glucose")) +
+                  geom_point( size=2.5, shape=21, stroke=1, alpha=0.7) +
+                  theme_minimal() +
+                  ggtitle(plot_title)
+          
+
+```
+
+## Dataset
+
+The dataset used in this application is the PimaIndiansDiabetes dataset available 
+in the `mlbench` R package. It is derived from the National Institude of Diabetes 
+and Digestive and Kidney Diseases, and was originally used to study the diabetes
+status of the Pima Indian population. The dataset contains the data of 768 patients, 
+each patient being described with 9 features, including the target variable (diabetes).
+
+Below is an example of a scatter plot that can be displayed by the application. 
+The user can choose the x and y parameters from the features (outside of the target variable), and 
+then interactively select one of the points in the application.
+
+<u>Scatter plot:</u>
+
+```{r slide2, echo=TRUE, error=FALSE, warning=FALSE, message=FALSE}
+ggplotly(p) %>%
+      layout(width = 600, height = 400, hovermode = "closest")
+```
+
+## Machine Learning
+
+Once the user has selected a specific data point, two machine learning models are trained using the remaining data that was not used for plotting, here called `train_data`. The two models chosen for this application are a **logistic regression** model and a **decision tree**. The goal is to solve a classification problem, i.e. to find out if the selected patient is diabetes positive or negative. 
+
+After training, the user's selected data point diabetes state will be predicted using both models, and the prediction probability is also saved. The code doing those steps can be seen below ; the selected data point is here chosen to be the first sample of the dataset, which will serve as an example. 
+
+<u>Code snippet:</u>
+
+```{r slide3, echo=TRUE, error=FALSE, warning=FALSE, message=FALSE}
+train_data <- dataset[!rownames(dataset) %in% rownames(data_subset), ]
+selected <- dataset[1,]
+    
+model_logistic <- glm(diabetes ~ ., data = train_data, family = binomial)
+prediction_logistic <- predict(model_logistic, selected, type = "response")
+probability_logistic <- round(prediction_logistic * 100, 2)
+class_logistic <- ifelse(prediction_logistic > 0.5, "Diabetes Positive", "Diabete Negative")
+    
+model_dtree <- rpart(diabetes ~ ., data = train_data, method = "class")
+prediction_tree_probs <- predict(model_dtree, selected, type = "prob")
+            
+probability_tree <- round(prediction_tree_probs[,"pos"] * 100, 2)
+class_tree <- ifelse(prediction_tree_probs[,"pos"] > 0.5, "Diabetes Positive", "Diabetes Negative")
+            
+true_answer <- ifelse(selected$diabetes == "pos", "Diabetes Positive", "Diabetes Negative")
+```
+            
+
+## Output
+
+The final output of the application is as follows: It gives back, for both models, the predicted class, either Diabetes Positive or Diabetes Negative, as well as the the corresponding probability (With a probability < 50% giving a negative result, and a probability > 50% giving a positive result). 
+
+In the application, the true answer as well as the parameters of the selected sample are also displayed, making it easy for the user to check and compare the models results. 
+
+<u>Predicted results:</u>
+
+```{r slide4, results = 'asis', echo=TRUE, error=FALSE, warning=FALSE, message=FALSE}
+cat(paste("Logistic Regression Prediction: ", class_logistic, 
+          "<br>Probability [%]: ", probability_logistic, 
+          "<br><br>Decision Tree Prediction: ", class_tree, 
+          "<br>Probability [%]: ", probability_tree))
+```
+
