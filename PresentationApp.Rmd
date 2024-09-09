@@ -1,9 +1,9 @@
 ---
 title: "Diabetes Prediction Application"
-#subtitle: "<span style='font-size:22px;'>Please click on the right border of the slide to view #the next one.</span>"
 output: slidy_presentation
 author: lavender-cherimoya
-date: "2024-08-30"
+date: "2024-09-09"
+subtitle: "<span style='font-size:22px;'>Please click on the right border of the slide to view the next one.</span>"
 ---
 
 ## Introduction
